@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Lobby</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<body onload="main()">
+    <span>Game ID:</span>
+    <span id="game_id"></span>
+    <table id="players">
+        <thead>
+            <th>ID</th>
+            <th>Name</th>
+        </thead>
+        <tbody></tbody>
+    </table>
+    </br>
+    <form action="/start" method="get">
+        <input type="submit" value="Start">
+    </form>
+</body>
+
+<script>
+    function getCookie(cookiename) {
+        var cookiestring = RegExp(cookiename + "=[^;]+").exec(document.cookie);
+        return decodeURIComponent(!!cookiestring ? cookiestring.toString().replace(/^[^=]+./, "") : "");
+    }
+
+    function fill_game_id() {
+        document.getElementById("game_id").innerHTML = getCookie("game_id");
+    }
+
+    function populate(data) {
+        var new_tbody = document.createElement('tbody');
+        for (key in data) {
+            var newRow = new_tbody.insertRow();
+            var newCell = newRow.insertCell();
+            var newText = document.createTextNode(key);
+            newCell.appendChild(newText);
+            var newCell = newRow.insertCell();
+            var newText = document.createTextNode(data[key]);
+            newCell.appendChild(newText);
+        }
+        var old_tbody = document.getElementById('players').getElementsByTagName('tbody')[0];
+        old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
+    }
+
+    async function main() {
+        fill_game_id();
+        for (; true;) {
+            fetch('/lobby_waiting', { redirect: "follow" })
+                .then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                        throw new Error("redirecting");
+                    }
+                    return response.json();
+                })
+                .then(data => populate(data))
+                .catch(error => {
+                    if (error != "redirecting") {
+                        console.error('Error:', error);
+                    }
+                });
+            await new Promise(r => setTimeout(r, 1000));
+        }
+    }
+</script>
+
+</html>

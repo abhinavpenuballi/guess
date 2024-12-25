@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<body onload="main()">
+    <table id="players">
+        <thead>
+            <th>Now Playing</th>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Last</th>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    </br>
+    </br>
+
+    <form action="/move" method="post">
+        <span>Min:</span>
+        <span id="min" style="padding-right:30px"></span>
+
+        <input id="input" name="input" type="number">
+
+        <span style="padding-left:30px">Max:</span>
+        <span id="max"></span>
+
+        </br>
+        </br>
+
+        <input id="submit" type="submit" value="Submit">
+    </form>
+</body>
+
+<script>
+    function getCookie(cookiename) {
+        var cookiestring = RegExp(cookiename + "=[^;]+").exec(document.cookie);
+        return decodeURIComponent(!!cookiestring ? cookiestring.toString().replace(/^[^=]+./, "") : "");
+    }
+
+    function populate(data) {
+        var id = getCookie("id");
+
+        document.getElementById("min").innerHTML = data["min"];
+        document.getElementById("max").innerHTML = data["max"];
+        document.getElementById("input").min = data["min"];
+        document.getElementById("input").max = data["max"];
+
+        var now_playing = data["now_playing"];
+
+        data["players"].sort(function (a, b) {
+            return a[0] > b[0];
+        });
+
+        var new_tbody = document.createElement('tbody');
+        for (key in data["players"]) {
+            var newRow = new_tbody.insertRow();
+
+            var newCell = newRow.insertCell();
+            if (data["players"][key][0] == now_playing) {
+                var newText = document.createTextNode("->");
+            } else {
+                var newText = document.createTextNode("");
+            }
+            newCell.appendChild(newText);
+
+            var newCell = newRow.insertCell();
+            var newText = document.createTextNode(data["players"][key][0]);
+            newCell.appendChild(newText);
+
+            var newCell = newRow.insertCell();
+            var newText = document.createTextNode(data["players"][key][1]);
+            newCell.appendChild(newText);
+
+            var newCell = newRow.insertCell();
+            var newText = document.createTextNode(data["players"][key][2]);
+            newCell.appendChild(newText);
+        }
+        var old_tbody = document.getElementById('players').getElementsByTagName('tbody')[0];
+        old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
+
+        document.getElementById("input").value = "";
+
+        if (id == now_playing) {
+            document.getElementById("input").disabled = false;
+            document.getElementById("submit").disabled = false;
+        } else {
+            document.getElementById("input").disabled = true;
+            document.getElementById("submit").disabled = true;
+            fetch('/move', { redirect: "follow" })
+                .then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                        throw new Error("redirecting");
+                    }
+                })
+                .catch(error => {
+                    if (error != "redirecting") {
+                        console.error('Error:', error);
+                    }
+                });
+        }
+    }
+
+    function main() {
+        fetch('/game_state')
+            .then(response => response.json())
+            .then(data => populate(data))
+            .catch(error => console.error('Error:', error));
+    }
+</script>
+
+</html>
